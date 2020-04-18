@@ -1,13 +1,13 @@
-package com.oocl.authserver;
+package com.oocl.felix.resourceserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AuthServerApplication {
+public class ResourceServerApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AuthServerApplication.class, args);
+        SpringApplication.run(ResourceServerApplication.class, args);
     }
 
 }

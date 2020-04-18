@@ -1,10 +1,10 @@
-package com.oocl.authserver;
+package com.oocl.felix.resourceserver;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class AuthServerApplicationTests {
+class ResourceServerApplicationTests {
 
     @Test
     void contextLoads() {

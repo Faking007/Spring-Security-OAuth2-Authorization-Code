@@ -1,4 +1,4 @@
-package com.oocl.client;
+package com.oocl.felix.client;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

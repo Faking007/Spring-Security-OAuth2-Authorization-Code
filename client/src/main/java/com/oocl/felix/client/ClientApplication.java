@@ -1,4 +1,4 @@
-package com.oocl.client;
+package com.oocl.felix.client;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

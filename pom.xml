@@ -14,6 +14,13 @@
     <name>oauth2</name>
     <description>Demo project for OAuth2 with spring security</description>
 
+    <packaging>pom</packaging>
+    <modules>
+        <module>auth-server</module>
+        <module>client</module>
+        <module>resource-server</module>
+    </modules>
+
     <properties>
         <java.version>1.8</java.version>
     </properties>
