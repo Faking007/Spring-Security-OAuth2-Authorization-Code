@@ -44,7 +44,6 @@ public class ClientService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails) {
             UserDetails principal1 = (UserDetails) principal;
-            System.out.println(principal1.getPassword());
             return principal1;
         }
         return null;
@@ -57,6 +56,7 @@ public class ClientService {
         }
         ModelAndView modelAndView = new ModelAndView("user-info");
         getUserInfoFromResourceServer(modelAndView, this.currentUser);
+        currentUser.setAccessToken(null);
         return modelAndView;
     }
 
@@ -105,7 +105,6 @@ public class ClientService {
         RequestEntity httpEntity = new RequestEntity<>(getHttpBody(code), getHttpHeaders(), HttpMethod.POST, URI.create(oauth2ServerProperties.getTokenUrl()));
         ResponseEntity<TokenDTO> exchange = restTemplate.exchange(httpEntity, TokenDTO.class);
         if (exchange.getStatusCode().is2xxSuccessful()) {
-            System.err.println(exchange.getBody());
             return Objects.requireNonNull(exchange.getBody()).getAccessToken();
         }
         throw new RuntimeException("请求令牌失败！");
