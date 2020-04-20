@@ -5,9 +5,20 @@ import com.oocl.felix.client.config.Oauth2ServerProperties;
 import com.oocl.felix.client.dto.ClientUser;
 import com.oocl.felix.client.dto.TokenDTO;
 import com.oocl.felix.client.dto.UserInfoDTO;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,11 +30,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.util.*;
 
 @Service
 public class ClientService {
@@ -43,19 +49,18 @@ public class ClientService {
         Authentication authentication = context.getAuthentication();
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails) {
-            UserDetails principal1 = (UserDetails) principal;
-            return principal1;
+            return (UserDetails) principal;
         }
         return null;
     }
 
     public ModelAndView getUserInfoPage() {
         BeanUtils.copyProperties(getCurrentUser(), currentUser);
-        if (Objects.nonNull(this.currentUser) && StringUtils.isEmpty(this.currentUser.getAccessToken())) {
+        if (Objects.nonNull(currentUser) && StringUtils.isEmpty(currentUser.getAccessToken())) {
             return new ModelAndView("redirect:" + getAuthorizeUrl());
         }
         ModelAndView modelAndView = new ModelAndView("user-info");
-        getUserInfoFromResourceServer(modelAndView, this.currentUser);
+        getUserInfoFromResourceServer(modelAndView, currentUser);
         currentUser.setAccessToken(null);
         return modelAndView;
     }
@@ -67,10 +72,10 @@ public class ClientService {
         RequestEntity<MultiValueMap<String, String>> requestEntity
                 = new RequestEntity<>(headers, HttpMethod.GET, URI.create("http://localhost:9090/user/WANGFE"));
         ResponseEntity<UserInfoDTO> exchange = null;
-        try{
+        try {
             //尝试访问资源
             exchange = restTemplate.exchange(requestEntity, UserInfoDTO.class);
-        }catch (HttpClientErrorException exception){
+        } catch (HttpClientErrorException exception) {
             //未认证会报错，重定向到授权页面，获取新token
             modelAndView.setViewName("redirect:" + getAuthorizeUrl());
             return;
