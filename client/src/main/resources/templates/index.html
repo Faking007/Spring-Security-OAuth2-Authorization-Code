@@ -1,11 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <title>Client</title>
 </head>
 <body>
 <h2>Client</h2>
-<a href="/user-info">点此进入用户详情页</a>
+<div>当前登录的用户为：<span th:text="${currentUser.username}">username</span></div>
+</br>
+<div>
+    当前的用户信息为：
+    <br>
+    <ul>
+        <li>Username：<span th:text="${currentUser.username}"/></li>
+        <li>Authorization Code：
+            <span th:if="${currentUser.code}!=null" th:text="${currentUser.code}"/>
+        </li>
+        <li>Access Token：
+            <span th:if="${currentUser.accessToken}!=null" th:text="${currentUser.accessToken}"/>
+        </li>
+        <li>Email：
+            <span th:if="${currentUser.email}!=null" th:text="${currentUser.email}"/>
+            <a th:if=${currentUser.email}==null href="/email">点此获取邮箱</a>
+        </li>
+    </ul>
+    <a href="/clear">Clear</a>
+</div>
 </body>
 </html>

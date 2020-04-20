@@ -44,75 +44,65 @@ public class ClientService {
 
     private ClientUser currentUser = new ClientUser();
 
-    public UserDetails getCurrentUser() {
+    public ClientUser getCurrentUser() {
         SecurityContext context = SecurityContextHolder.getContext();
         Authentication authentication = context.getAuthentication();
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UserDetails) {
-            return (UserDetails) principal;
-        }
-        return null;
+        UserDetails principal = (UserDetails) authentication.getPrincipal();
+        BeanUtils.copyProperties(principal, currentUser);
+        return currentUser;
     }
 
-    public ModelAndView getUserInfoPage() {
-        BeanUtils.copyProperties(getCurrentUser(), currentUser);
-        if (Objects.nonNull(currentUser) && StringUtils.isEmpty(currentUser.getAccessToken())) {
-            return new ModelAndView("redirect:" + getAuthorizeUrl());
-        }
-        ModelAndView modelAndView = new ModelAndView("user-info");
-        getUserInfoFromResourceServer(modelAndView, currentUser);
-        currentUser.setAccessToken(null);
+    public ModelAndView indexPage() {
+        ModelAndView modelAndView = new ModelAndView("index");
+        modelAndView.addObject("currentUser", getCurrentUser());
         return modelAndView;
     }
 
-    private void getUserInfoFromResourceServer(ModelAndView modelAndView, ClientUser currentUser) {
-        //正常请求资源服务器，获取用户信息
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(currentUser.getAccessToken());
-        RequestEntity<MultiValueMap<String, String>> requestEntity
-                = new RequestEntity<>(headers, HttpMethod.GET, URI.create("http://localhost:9090/user/WANGFE"));
-        ResponseEntity<UserInfoDTO> exchange = null;
-        try {
-            //尝试访问资源
-            exchange = restTemplate.exchange(requestEntity, UserInfoDTO.class);
-        } catch (HttpClientErrorException exception) {
-            //未认证会报错，重定向到授权页面，获取新token
-            modelAndView.setViewName("redirect:" + getAuthorizeUrl());
-            return;
+    public ModelAndView getEmail() {
+        if (StringUtils.isEmpty(currentUser.getCode())) {
+            return new ModelAndView("redirect:code");
         }
-        assert exchange != null;
-        if (exchange.getStatusCode().is2xxSuccessful()) {
-            UserInfoDTO body = exchange.getBody();
-            modelAndView.addObject("currentLoginUsername", currentUser.getUsername());
-            modelAndView.addObject("user", body);
+        if (StringUtils.isEmpty(currentUser.getAccessToken())) {
+            return new ModelAndView("redirect:accesstoken");
         }
+        return new ModelAndView("redirect:resource");
     }
 
-    private String getAuthorizeUrl() {
+    public ModelAndView getCode() {
         List<String> params = new ArrayList<>();
         params.add("client_id" + "=" + oauth2ClientProperties.getClientId());
         params.add("redirect_uri" + "=" + URLEncoder.encode(oauth2ClientProperties.getRedirectUri()));
         params.add("response_type" + "=" + oauth2ClientProperties.getResponseType());
         params.add("scope" + "=" + URLEncoder.encode(oauth2ClientProperties.getScope()));
-        return oauth2ServerProperties.getAuthorizeUrl() + "?" + params.stream().reduce((a, b) -> a + "&" + b).get();
+        String authorizeUrl = oauth2ServerProperties.getAuthorizeUrl() + "?" + params.stream().reduce((a, b) -> a + "&" + b).get();
+        return new ModelAndView("redirect:" + authorizeUrl);
     }
 
-    public ModelAndView callback(String code) throws UnsupportedEncodingException {
-        String token = getToken(code);
+    public ModelAndView callback(String code) {
+        currentUser.setCode(code);
+        ModelAndView modelAndView = new ModelAndView("index");
+        modelAndView.addObject("currentUser", currentUser);
+        return modelAndView;
+    }
+
+    public ModelAndView getAccessToken() throws UnsupportedEncodingException {
+        String token = getAccessTokenFromAuthServer(currentUser.getCode());
         if (!StringUtils.isEmpty(token)) {
             currentUser.setAccessToken(token);
-            return new ModelAndView("redirect:/user-info");
+            ModelAndView modelAndView = new ModelAndView("index");
+            modelAndView.addObject("currentUser", currentUser);
+            return modelAndView;
         }
-        throw new RuntimeException("请求超时");
+        throw new RuntimeException("Access-token is empty");
     }
 
-    public String getToken(String code) throws UnsupportedEncodingException {
+    public String getAccessTokenFromAuthServer(String code) throws UnsupportedEncodingException {
         RequestEntity httpEntity = new RequestEntity<>(getHttpBody(code), getHttpHeaders(), HttpMethod.POST, URI.create(oauth2ServerProperties.getTokenUrl()));
         ResponseEntity<TokenDTO> exchange = restTemplate.exchange(httpEntity, TokenDTO.class);
         if (exchange.getStatusCode().is2xxSuccessful()) {
             return Objects.requireNonNull(exchange.getBody()).getAccessToken();
         }
-        throw new RuntimeException("请求令牌失败！");
+        throw new RuntimeException("Failed to get access-token from auth-server");
     }
 
     private HttpHeaders getHttpHeaders() {
@@ -130,5 +120,36 @@ public class ClientService {
         params.add("redirect_uri", oauth2ClientProperties.getRedirectUri());
         params.add("scope", oauth2ClientProperties.getScope());
         return params;
+    }
+
+    public ModelAndView getResource() {
+        UserInfoDTO userInfoDTO = getUserInfoFromResourceServer();
+        if (Objects.nonNull(userInfoDTO)) {
+            ModelAndView modelAndView = new ModelAndView("index");
+            currentUser.setEmail(userInfoDTO.getEmail());
+            modelAndView.addObject("currentUser", currentUser);
+            return modelAndView;
+        }
+        System.out.println("Failed to get resource, try to get code again...");
+        return new ModelAndView("redirect:code");
+    }
+
+    private UserInfoDTO getUserInfoFromResourceServer() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(currentUser.getAccessToken());
+        RequestEntity<MultiValueMap<String, String>> requestEntity
+                = new RequestEntity<>(headers, HttpMethod.GET, URI.create("http://localhost:9090/user/WANGFE"));
+        ResponseEntity<UserInfoDTO> exchange;
+        try {
+            exchange = restTemplate.exchange(requestEntity, UserInfoDTO.class);
+        } catch (HttpClientErrorException exception) {
+            return null;
+        }
+        return exchange.getStatusCode().is2xxSuccessful() ? exchange.getBody() : null;
+    }
+
+    public ModelAndView clear() {
+        currentUser = new ClientUser();
+        return new ModelAndView("redirect:index");
     }
 }

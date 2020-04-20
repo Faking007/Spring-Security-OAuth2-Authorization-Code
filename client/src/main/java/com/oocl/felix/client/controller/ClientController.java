@@ -14,13 +14,38 @@ public class ClientController {
     @Autowired
     private ClientService clientService;
 
-    @GetMapping("/user-info")
-    public ModelAndView userInfoPage() {
-        return clientService.getUserInfoPage();
+    @GetMapping(value = {"/", "/index"})
+    public ModelAndView indexPage() {
+        return clientService.indexPage();
+    }
+
+    @GetMapping("/email")
+    public ModelAndView getEmail() {
+        return clientService.getEmail();
+    }
+
+    @GetMapping("/code")
+    public ModelAndView getCode() {
+        return clientService.getCode();
     }
 
     @GetMapping("/callback")
     public ModelAndView callback(@RequestParam("code") String code) throws UnsupportedEncodingException {
         return clientService.callback(code);
+    }
+
+    @GetMapping("/accesstoken")
+    public ModelAndView getAccessToken() throws UnsupportedEncodingException {
+        return clientService.getAccessToken();
+    }
+
+    @GetMapping("/resource")
+    public ModelAndView getResource() {
+        return clientService.getResource();
+    }
+
+    @GetMapping("/clear")
+    public ModelAndView clear() {
+        return clientService.clear();
     }
 }

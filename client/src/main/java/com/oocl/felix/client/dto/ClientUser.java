@@ -7,5 +7,7 @@ public class ClientUser {
 
     private String username;
     private String password;
+    private String code;
     private String accessToken;
+    private String email;
 }
