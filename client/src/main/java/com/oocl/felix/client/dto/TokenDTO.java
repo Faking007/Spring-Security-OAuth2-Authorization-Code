@@ -14,6 +14,4 @@ public class TokenDTO {
     private String tokenType;
     @JsonProperty("expires_in")
     private String expiresIn;
-    @JsonProperty("scope")
-    private String scope;
 }

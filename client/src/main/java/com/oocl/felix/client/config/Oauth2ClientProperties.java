@@ -13,5 +13,4 @@ public class Oauth2ClientProperties {
     private String clientSecret;
     private String redirectUri;
     private String responseType;
-    private String scope;
 }

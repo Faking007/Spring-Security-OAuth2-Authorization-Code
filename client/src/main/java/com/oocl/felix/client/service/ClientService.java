@@ -1,7 +1,8 @@
 package com.oocl.felix.client.service;
 
 import com.oocl.felix.client.config.Oauth2ClientProperties;
-import com.oocl.felix.client.config.Oauth2ServerProperties;
+import com.oocl.felix.client.config.Oauth2ResourceServerProperties;
+import com.oocl.felix.client.config.Oauth2AuthServerProperties;
 import com.oocl.felix.client.dto.ClientUser;
 import com.oocl.felix.client.dto.TokenDTO;
 import com.oocl.felix.client.dto.UserInfoDTO;
@@ -35,10 +36,13 @@ import org.springframework.web.servlet.ModelAndView;
 public class ClientService {
 
     @Autowired
-    private Oauth2ServerProperties oauth2ServerProperties;
+    private Oauth2AuthServerProperties oauth2AuthServerProperties;
 
     @Autowired
     private Oauth2ClientProperties oauth2ClientProperties;
+
+    @Autowired
+    private Oauth2ResourceServerProperties oauth2ResourceServerProperties;
 
     private RestTemplate restTemplate = new RestTemplate();
 
@@ -73,8 +77,7 @@ public class ClientService {
         params.add("client_id" + "=" + oauth2ClientProperties.getClientId());
         params.add("redirect_uri" + "=" + URLEncoder.encode(oauth2ClientProperties.getRedirectUri()));
         params.add("response_type" + "=" + oauth2ClientProperties.getResponseType());
-        params.add("scope" + "=" + URLEncoder.encode(oauth2ClientProperties.getScope()));
-        String authorizeUrl = oauth2ServerProperties.getAuthorizeUrl() + "?" + params.stream().reduce((a, b) -> a + "&" + b).get();
+        String authorizeUrl = oauth2AuthServerProperties.getAuthorizeUrl() + "?" + params.stream().reduce((a, b) -> a + "&" + b).get();
         return new ModelAndView("redirect:" + authorizeUrl);
     }
 
@@ -97,7 +100,7 @@ public class ClientService {
     }
 
     public String getAccessTokenFromAuthServer(String code) throws UnsupportedEncodingException {
-        RequestEntity httpEntity = new RequestEntity<>(getHttpBody(code), getHttpHeaders(), HttpMethod.POST, URI.create(oauth2ServerProperties.getTokenUrl()));
+        RequestEntity httpEntity = new RequestEntity<>(getHttpBody(code), getHttpHeaders(), HttpMethod.POST, URI.create(oauth2AuthServerProperties.getTokenUrl()));
         ResponseEntity<TokenDTO> exchange = restTemplate.exchange(httpEntity, TokenDTO.class);
         if (exchange.getStatusCode().is2xxSuccessful()) {
             return Objects.requireNonNull(exchange.getBody()).getAccessToken();
@@ -118,7 +121,6 @@ public class ClientService {
         params.add("code", code);
         params.add("grant_type", "authorization_code");
         params.add("redirect_uri", oauth2ClientProperties.getRedirectUri());
-        params.add("scope", oauth2ClientProperties.getScope());
         return params;
     }
 
@@ -138,7 +140,7 @@ public class ClientService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(currentUser.getAccessToken());
         RequestEntity<MultiValueMap<String, String>> requestEntity
-                = new RequestEntity<>(headers, HttpMethod.GET, URI.create("http://localhost:9090/user/WANGFE"));
+                = new RequestEntity<>(headers, HttpMethod.GET, URI.create(oauth2ResourceServerProperties.getHost() + "/user/WANGFE"));
         ResponseEntity<UserInfoDTO> exchange;
         try {
             exchange = restTemplate.exchange(requestEntity, UserInfoDTO.class);
