@@ -29,7 +29,7 @@ public class AuthorizationConfig extends AuthorizationServerConfigurerAdapter {
                 .authorizedGrantTypes("authorization_code")
                 .scopes("read_user_info")
                 .resourceIds("resource")
-                .redirectUris("http://localhost:8080/callback");
+                .redirectUris("http://client:8080/callback");
 //                .accessTokenValiditySeconds(10);
     }
 }
